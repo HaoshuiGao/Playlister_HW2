@@ -10,6 +10,7 @@ import MoveSong_Transaction from './transactions/MoveSong_Transaction.js';
 
 // THESE REACT COMPONENTS ARE MODALS
 import DeleteListModal from './components/DeleteListModal.js';
+import DeleteSongModal from './components/DeleteSongModal.js';
 
 // THESE REACT COMPONENTS ARE IN OUR UI
 import Banner from './components/Banner.js';
@@ -36,7 +37,10 @@ class App extends React.Component {
         this.state = {
             listKeyPairMarkedForDeletion : null,
             currentList : null,
-            sessionData : loadedSessionData
+            sessionData : loadedSessionData,
+
+            songNameForDeletion:null,
+            songNameForDeletionIndex:null
         }
     }
     sortKeyNamePairsByName = (keyNamePairs) => {
@@ -77,7 +81,10 @@ class App extends React.Component {
                 nextKey: prevState.sessionData.nextKey + 1,
                 counter: prevState.sessionData.counter + 1,
                 keyNamePairs: updatedPairs
-            }
+            },
+            songNameForDeletion:prevState.songNameForDeletion,
+            songNameForDeletionIndex:prevState.songNameForDeletionIndex
+
         }), () => {
             // PUTTING THIS NEW LIST IN PERMANENT STORAGE
             // IS AN AFTER EFFECT
@@ -87,6 +94,7 @@ class App extends React.Component {
             this.db.mutationUpdateSessionData(this.state.sessionData);
         });
     }
+    
     // THIS FUNCTION BEGINS THE PROCESS OF DELETING A LIST.
     deleteList = (key) => {
         // IF IT IS THE CURRENT LIST, CHANGE THAT
@@ -133,6 +141,29 @@ class App extends React.Component {
         if (this.state.currentList) {
             this.deleteList(this.state.currentList.key);
         }
+    }
+    //put the argument in deleteSong()-- helper function
+    deleteMarkedSong= () =>{
+        this.deleteSong(this.state.songNameForDeletionIndex);
+        this.hideDeleteSongModal();
+    }
+    //delete the song and set current
+    deleteSong= (index) =>{
+        this.state.currentList.songs.splice(index,1)
+
+         // AND FROM OUR APP STATE, update it
+         this.setState(prevState => ({
+            listKeyPairMarkedForDeletion : prevState.listKeyPairMarkedForDeletion,
+            currentList: this.state.currentList,
+            sessionData: this.state.sessionData
+        }), () => {
+            // DELETING THE SONG FROM PERMANENT STORAGE
+            // IS AN AFTER EFFECT
+            this.db.mutationUpdateList(this.state.currentList);
+            
+            this.db.mutationUpdateSessionData(this.state.sessionData);
+        });
+
     }
     renameList = (key, newName) => {
         let newKeyNamePairs = [...this.state.sessionData.keyNamePairs];
@@ -263,6 +294,21 @@ class App extends React.Component {
             this.showDeleteListModal();
         });
     }
+    //Save the song name and index for deletion in state
+    markSongForDeletion= (songName,index) =>{
+        this.setState(prevState => ({
+            currentList:prevState.currentList,
+            listKeyPairMarkedForDeletion: prevState.listKeyPairMarkedForDeletion,
+            sessionData: prevState.sessionData,
+            //store
+            songNameForDeletion: songName,
+            songNameForDeletionIndex:index
+        }), () => {
+            // PROMPT THE USER
+            this.showDeleteSongModal();
+        });
+    }
+
     // THIS FUNCTION SHOWS THE MODAL FOR PROMPTING THE USER
     // TO SEE IF THEY REALLY WANT TO DELETE THE LIST
     showDeleteListModal() {
@@ -273,6 +319,22 @@ class App extends React.Component {
     hideDeleteListModal() {
         let modal = document.getElementById("delete-list-modal");
         modal.classList.remove("is-visible");
+    }
+
+    // THIS FUNCTION IS FOR SHOW THE MODAL  
+    showDeleteSongModal() {
+        let modal = document.getElementById("delete-song-modal");
+        modal.classList.add("is-visible");
+    }
+    // THIS FUNCTION IS FOR HIDING THE MODAL
+    hideDeleteSongModal() {
+        let modal = document.getElementById("delete-song-modal");
+        modal.classList.remove("is-visible");
+    }
+
+    //refreshList
+    refreshList(list){
+
     }
     render() {
         let canAddSong = this.state.currentList !== null;
@@ -303,13 +365,20 @@ class App extends React.Component {
                 />
                 <PlaylistCards
                     currentList={this.state.currentList}
-                    moveSongCallback={this.addMoveSongTransaction} />
+                    moveSongCallback={this.addMoveSongTransaction} 
+                    deleteSongCallback={this.markSongForDeletion}
+                />
                 <Statusbar 
                     currentList={this.state.currentList} />
                 <DeleteListModal
                     listKeyPair={this.state.listKeyPairMarkedForDeletion}
                     hideDeleteListModalCallback={this.hideDeleteListModal}
                     deleteListCallback={this.deleteMarkedList}
+                />
+                <DeleteSongModal
+                    songNameForDeletion={this.state.songNameForDeletion}
+                    deleteSongCallback={this.deleteMarkedSong}
+                    hideDeleteSongModalCallback={this.hideDeleteSongModal}
                 />
             </div>
         );
