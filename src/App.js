@@ -98,7 +98,20 @@ class App extends React.Component {
             this.db.mutationUpdateSessionData(this.state.sessionData);
         });
     }
-    
+    addSong= ()=> {
+        let newSong={title:"Untitled",artist:"Unknown" ,youTubeId:"dQw4w9WgXcQ"};
+        this.state.currentList.songs.push(newSong)  
+        this.setState(prevState => ({
+           currentList: this.state.currentList
+        }), () => {
+            // Adding a song FROM PERMANENT STORAGE
+            // IS AN AFTER EFFECT
+            this.db.mutationUpdateList(this.state.currentList);
+
+            // SO IS STORING OUR SESSION DATA
+            this.db.mutationUpdateSessionData(this.state.sessionData);
+        });
+    }
     // THIS FUNCTION BEGINS THE PROCESS OF DELETING A LIST.
     deleteList = (key) => {
         // IF IT IS THE CURRENT LIST, CHANGE THAT
@@ -267,7 +280,7 @@ class App extends React.Component {
         });
     }
     getPlaylistSize = () => {
-        return this.state.currentList.songs.length;
+        return this.state.currentList.songs.length
     }
     // THIS FUNCTION MOVES A SONG IN THE CURRENT LIST FROM
     // start TO end AND ADJUSTS ALL OTHER ITEMS ACCORDINGLY
@@ -420,6 +433,7 @@ class App extends React.Component {
                     undoCallback={this.undo}
                     redoCallback={this.redo}
                     closeCallback={this.closeCurrentList}
+                    addSongCallback={this.addSong}
                 />
                 <PlaylistCards
                     currentList={this.state.currentList}
