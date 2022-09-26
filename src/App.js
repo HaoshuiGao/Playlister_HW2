@@ -7,6 +7,8 @@ import jsTPS from './common/jsTPS.js';
 
 // OUR TRANSACTIONS
 import MoveSong_Transaction from './transactions/MoveSong_Transaction.js';
+import AddSong_Transaction from './transactions/AddSong_Transaction.js';
+import DeleteSong_Transaction from './transactions/DeleteSong_Transaction.js';
 
 // THESE REACT COMPONENTS ARE MODALS
 import DeleteListModal from './components/DeleteListModal.js';
@@ -20,6 +22,7 @@ import PlaylistCards from './components/PlaylistCards.js';
 import SidebarHeading from './components/SidebarHeading.js';
 import SidebarList from './components/SidebarList.js';
 import Statusbar from './components/Statusbar.js';
+import EditSong_Transaction from './transactions/EditSong_Transaction';
 
 class App extends React.Component {
     constructor(props) {
@@ -161,7 +164,8 @@ class App extends React.Component {
     }
     //put the argument in deleteSong()-- helper function
     deleteMarkedSong= () =>{
-        this.deleteSong(this.state.songNameForDeletionIndex);
+        this.addDeleteSongTransaction(this.state.songNameForDeletionIndex)
+        //this.deleteSong(this.state.songNameForDeletionIndex);
         this.hideDeleteSongModal();
     }
     //delete the song and set current
@@ -182,15 +186,16 @@ class App extends React.Component {
         });
     }
     renameMarkedSong=() =>{
-        this.renameSong(this.state.songNameForEditionIndex);
+        this.addEditSongTransaction(this.state.songNameForEditionIndex);
+        //this.renameSong(this.state.songNameForEditionIndex);
         this.hideEditSongModal();
     }
-    renameSong=(index)=>{
-        let newSong={title:document.getElementById("edit-song-modal-title-textfield").value,
+    renameSong=(index,editedSong)=>{
+        /*let newSong={title:document.getElementById("edit-song-modal-title-textfield").value,
                     artist:document.getElementById("edit-song-modal-artist-textfield").value,
                     youTubeId:document.getElementById("edit-song-modal-youTubeId-textfield").value,
-        }
-        this.state.currentList.songs.splice(index,1,newSong);
+        }*/
+        this.state.currentList.songs.splice(index,1,editedSong);
          // AND FROM OUR APP STATE
          this.setState(prevState => ({
             currentList:this.state.currentList,
@@ -203,8 +208,26 @@ class App extends React.Component {
 
             // SO IS STORING OUR SESSION DATA
             this.db.mutationUpdateSessionData(this.state.sessionData);
+        });
+        
 
-            
+
+
+    }
+
+    insertDeletedSongBack=(deleteIndex,deleteSongObject)=>{
+        this.state.currentList.songs.splice(deleteIndex,0,deleteSongObject);
+         // AND FROM OUR APP STATE
+         this.setState(prevState => ({
+            currentList:this.state.currentList,
+            sessionData:this.state.sessionData,
+        }), () => {
+            // UPDATING LIST FROM PERMANENT STORAGE
+            // IS AN AFTER EFFECT
+            this.db.mutationUpdateList(this.state.currentList);
+
+            // SO IS STORING OUR SESSION DATA
+            this.db.mutationUpdateSessionData(this.state.sessionData);
         });
 
 
@@ -311,6 +334,19 @@ class App extends React.Component {
         let transaction = new MoveSong_Transaction(this, start, end);
         this.tps.addTransaction(transaction);
     }
+
+    addAddSongTransaction= ()=>{
+        let transaction=new AddSong_Transaction(this);
+        this.tps.addTransaction(transaction)
+    }
+    addDeleteSongTransaction= (deleteIndex)=>{
+        let transaction=new DeleteSong_Transaction(this,deleteIndex);
+        this.tps.addTransaction(transaction)
+    }
+    addEditSongTransaction=(editSongIndex)=>{
+        let transaction=new EditSong_Transaction(this,editSongIndex);
+        this.tps.addTransaction(transaction)
+    }
     // THIS FUNCTION BEGINS THE PROCESS OF PERFORMING AN UNDO
     undo = () => {
         if (this.tps.hasTransactionToUndo()) {
@@ -407,11 +443,21 @@ class App extends React.Component {
         let modal = document.getElementById("edit-song-modal");
         modal.classList.remove("is-visible");
     }
+   
+    shortCutKey=(event)=>{
+                if ((event.key === "z" ||event.key === "Z") && event.ctrlKey){
+                    this.undo();
+                }
+                if ((event.key === "y"||event.key === "Y") && event.ctrlKey){
+                    this.redo();
+                } 
+    }
     render() {
         let canAddSong = this.state.currentList !== null;
         let canUndo = this.tps.hasTransactionToUndo();
         let canRedo = this.tps.hasTransactionToRedo();
         let canClose = this.state.currentList !== null;
+        document.onkeydown=this.shortCutKey;
         return (
             <div id="root">
                 <Banner />
@@ -433,7 +479,7 @@ class App extends React.Component {
                     undoCallback={this.undo}
                     redoCallback={this.redo}
                     closeCallback={this.closeCurrentList}
-                    addSongCallback={this.addSong}
+                    addSongCallback={this.addAddSongTransaction}
                 />
                 <PlaylistCards
                     currentList={this.state.currentList}
