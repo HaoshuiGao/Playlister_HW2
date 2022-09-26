@@ -46,7 +46,9 @@ class App extends React.Component {
             songNameForDeletion:null,
             songNameForDeletionIndex:null,
 
-            songNameForEditionIndex:null
+            songNameForEditionIndex:null,
+
+            modalOpen:false
 
         }
     }
@@ -281,6 +283,7 @@ class App extends React.Component {
     }
     // THIS FUNCTION BEGINS THE PROCESS OF CLOSING THE CURRENT LIST
     closeCurrentList = () => {
+        this.tps.clearAllTransactions();
         this.setState(prevState => ({
             listKeyPairMarkedForDeletion : prevState.listKeyPairMarkedForDeletion,
             currentList: null,
@@ -412,36 +415,60 @@ class App extends React.Component {
 
     // THIS FUNCTION SHOWS THE MODAL FOR PROMPTING THE USER
     // TO SEE IF THEY REALLY WANT TO DELETE THE LIST
-    showDeleteListModal() {
+    showDeleteListModal=()=> {
         let modal = document.getElementById("delete-list-modal");
         modal.classList.add("is-visible");
+        this.setState({
+            modalOpen:true
+            }
+        )
     }
     // THIS FUNCTION IS FOR HIDING THE MODAL
-    hideDeleteListModal() {
+    hideDeleteListModal=()=> {
         let modal = document.getElementById("delete-list-modal");
         modal.classList.remove("is-visible");
+        this.setState({
+            modalOpen:false
+            }
+        )
     }
 
     // THIS FUNCTION IS FOR SHOW THE MODAL  
-    showDeleteSongModal() {
+    showDeleteSongModal=()=> {
         let modal = document.getElementById("delete-song-modal");
         modal.classList.add("is-visible");
+        this.setState({
+            modalOpen:true
+            }
+        )
     }
     // THIS FUNCTION IS FOR HIDING THE MODAL
-    hideDeleteSongModal() {
+    hideDeleteSongModal=()=> {
         let modal = document.getElementById("delete-song-modal");
         modal.classList.remove("is-visible");
+        this.setState({
+            modalOpen:false
+            }
+        )
     }
 
     // THIS FUNCTION IS FOR SHOW THE MODAL  
-    showEditSongModal() {
+    showEditSongModal=()=> {
         let modal = document.getElementById("edit-song-modal");
         modal.classList.add("is-visible");
+        this.setState({
+            modalOpen:true
+            }
+        )
     }
     // THIS FUNCTION IS FOR HIDING THE MODAL
-    hideEditSongModal() {
+    hideEditSongModal=() =>{
         let modal = document.getElementById("edit-song-modal");
         modal.classList.remove("is-visible");
+        this.setState({
+            modalOpen:false
+            }
+        )
     }
    
     shortCutKey=(event)=>{
@@ -452,17 +479,37 @@ class App extends React.Component {
                     this.redo();
                 } 
     }
+    turnModalOn=(modalOpen)=>{
+        this.setState(prevState => ({
+            modalOpen:modalOpen
+        }))
+    }
     render() {
         let canAddSong = this.state.currentList !== null;
         let canUndo = this.tps.hasTransactionToUndo();
         let canRedo = this.tps.hasTransactionToRedo();
         let canClose = this.state.currentList !== null;
+        let canAddList=this.state.currentList ===null;
+        
+        if(this.state.modalOpen){
+            canAddSong=false
+            canUndo=false
+            canRedo=false
+            canClose=false
+        }
+        else{
+            canAddSong = this.state.currentList !== null;
+            canUndo = this.tps.hasTransactionToUndo();
+            canRedo = this.tps.hasTransactionToRedo();
+            canClose = this.state.currentList !== null;
+        }
         document.onkeydown=this.shortCutKey;
         return (
             <div id="root">
                 <Banner />
                 <SidebarHeading
                     createNewListCallback={this.createNewList}
+                    canAddList={canAddList}
                 />
                 <SidebarList
                     currentList={this.state.currentList}
